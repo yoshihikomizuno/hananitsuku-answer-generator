@@ -60,7 +60,8 @@ export const buildParams = (model, messages) => {
   if (OPENAI_STYLE_PREFIXES.some((p) => model.startsWith(p))) {
     return {
       messages,
-      max_completion_tokens: MAX_OUTPUT_TOKENS,
+      // 推論トークンも出力枠を消費するため、本文が空にならないよう広めに取る（使った分だけ課金）
+      max_completion_tokens: MAX_OUTPUT_TOKENS * 3,
       temperature: TEMPERATURE,
       reasoning_effort: 'low',
     };
@@ -129,7 +130,28 @@ export const cleanReply = (raw) => {
   return text.trim();
 };
 
-const QUOTA_PATTERN = /neuron|daily|per day|quota|allocation|budget|3040|2003|insufficient/i;
+/** 空応答の診断用。本文は含めず、キー名・長さ・終了理由・トークン数だけを返す */
+export const describeShape = (result) => {
+  if (result == null || typeof result !== 'object') return { type: typeof result };
+  const choice = Array.isArray(result.choices) ? result.choices[0] : null;
+  const message = choice && choice.message ? choice.message : null;
+  const content = message ? message.content : undefined;
+  const rawText = typeof result.response === 'string' ? result.response : '';
+  return {
+    keys: Object.keys(result).join(','),
+    choiceKeys: choice ? Object.keys(choice).join(',') : null,
+    messageKeys: message ? Object.keys(message).join(',') : null,
+    contentType: Array.isArray(content) ? 'array' : typeof content,
+    contentLength: typeof content === 'string' ? content.length : Array.isArray(content) ? content.length : null,
+    contentHead: typeof content === 'string' ? content.slice(0, 12) : null,
+    reasoningLength: message && typeof message.reasoning_content === 'string' ? message.reasoning_content.length : null,
+    responseLength: rawText.length,
+    finishReason: choice ? choice.finish_reason : null,
+    usage: result.usage || null,
+  };
+};
+
+const QUOTA_PATTERN =/neuron|daily|per day|quota|allocation|budget|3040|2003|insufficient/i;
 const RATE_PATTERN = /429|rate.?limit|too many|capacity|overloaded/i;
 
 export const classifyError = (err) => {
@@ -173,7 +195,7 @@ export const generateReply = async (ai, messages, models = DEFAULT_MODELS, optio
       const result = await withTimeout(ai.run(model, buildParams(model, messages)), timeoutMs, model);
       const text = cleanReply(extractText(result));
       if (text) return { text, model, attempts };
-      attempts.push({ model, error: 'empty response', shape: Object.keys(result || {}).join(',') });
+      attempts.push({ model, error: 'empty response', shape: describeShape(result) });
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       attempts.push({ model, error: message });
