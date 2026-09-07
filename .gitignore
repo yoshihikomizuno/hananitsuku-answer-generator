@@ -1,0 +1,10 @@
+*handoff*.md
+.env
+.env.*
+.dev.vars
+.dev.vars.*
+node_modules/
+.wrangler/
+.claude/
+Thumbs.db
+desktop.ini

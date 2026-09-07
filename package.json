@@ -1,0 +1,19 @@
+{
+  "name": "hananitsuku-answer-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HananiTsuku Answer Generator - static site + Cloudflare Worker (Workers AI free tier, prompt fallback)",
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"test/**/*.test.mjs\"",
+    "serve": "python -m http.server 8788",
+    "dev": "wrangler dev -c worker/wrangler.local.jsonc --port 8787 --ip 127.0.0.1",
+    "dev:quota": "wrangler dev -c worker/wrangler.local.jsonc --var DAILY_LIMIT:3 --port 8787 --ip 127.0.0.1",
+    "check": "wrangler deploy -c worker/wrangler.jsonc --dry-run --outdir .wrangler/dry-run",
+    "deploy": "wrangler deploy -c worker/wrangler.jsonc",
+    "tail": "wrangler tail -c worker/wrangler.jsonc"
+  },
+  "devDependencies": {
+    "wrangler": "^4.112.0"
+  }
+}

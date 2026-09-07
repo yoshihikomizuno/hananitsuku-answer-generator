@@ -1,0 +1,39 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "hananitsuku-answer",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "workers_dev": true,
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    // Candidate models, tried in order. First one that answers wins.
+    "AI_MODELS": "@cf/google/gemma-4-26b-a4b-it,@cf/openai/gpt-oss-20b,@cf/qwen/qwen3-30b-a3b-fp8",
+    // Global cap per UTC day (keeps usage inside the 10,000 Neurons/day free allocation).
+    "DAILY_LIMIT": "500",
+    // Per visitor (hashed IP) caps.
+    "PER_IP_MINUTE": "6",
+    "PER_IP_DAY": "40",
+    // Browser origins allowed to call this API (localhost is always allowed).
+    "ALLOWED_ORIGINS": "https://yoshihikomizuno.github.io,https://mazareal.co.jp,https://www.mazareal.co.jp"
+  },
+  "ai": {
+    "binding": "AI"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA",
+        "class_name": "QuotaCounter"
+      }
+    ]
+  },
+  "exports": {
+    "QuotaCounter": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}

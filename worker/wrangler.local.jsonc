@@ -1,0 +1,32 @@
+{
+  // LOCAL DEVELOPMENT ONLY. Same as wrangler.jsonc minus the "ai" binding
+  // (the AI binding forces a remote session that needs `wrangler login`).
+  // MOCK_AI is fixed to "1" so `npm run dev` works without any Cloudflare login.
+  // Override with `--var MOCK_AI:fail` / `MOCK_AI:quota` / `MOCK_AI:rate` / `--var DAILY_LIMIT:3`.
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "hananitsuku-answer-local",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-01",
+  "vars": {
+    "MOCK_AI": "1",
+    "AI_MODELS": "@cf/google/gemma-4-26b-a4b-it,@cf/openai/gpt-oss-20b,@cf/qwen/qwen3-30b-a3b-fp8",
+    "DAILY_LIMIT": "500",
+    "PER_IP_MINUTE": "6",
+    "PER_IP_DAY": "40",
+    "ALLOWED_ORIGINS": "https://yoshihikomizuno.github.io,https://mazareal.co.jp,https://www.mazareal.co.jp"
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "QUOTA",
+        "class_name": "QuotaCounter"
+      }
+    ]
+  },
+  "exports": {
+    "QuotaCounter": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}
