@@ -172,8 +172,8 @@ export const generateReply = async (ai, messages, models = DEFAULT_MODELS, optio
     try {
       const result = await withTimeout(ai.run(model, buildParams(model, messages)), timeoutMs, model);
       const text = cleanReply(extractText(result));
-      if (text) return { text, model };
-      attempts.push({ model, error: 'empty response' });
+      if (text) return { text, model, attempts };
+      attempts.push({ model, error: 'empty response', shape: Object.keys(result || {}).join(',') });
     } catch (err) {
       const message = err && err.message ? err.message : String(err);
       attempts.push({ model, error: message });

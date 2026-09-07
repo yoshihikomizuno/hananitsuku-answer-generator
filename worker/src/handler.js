@@ -131,8 +131,13 @@ export const handleRequest = async (request, env, deps = {}) => {
 
     try {
       const ai = deps.ai || getAI(env);
-      const { text, model } = await generateReply(ai, messages, config.models);
-      return json({ reply: text, model, remaining: ticket.remaining }, 200, origin);
+      const { text, model, attempts } = await generateReply(ai, messages, config.models);
+      const fallback = attempts && attempts.length > 0 ? attempts : undefined;
+      if (fallback) {
+        // 先頭モデルが使えず次点に落ちた理由を残す（本文は含まない）。応答にも載せて curl で診断できるようにする
+        console.warn('model fallback', JSON.stringify(fallback));
+      }
+      return json({ reply: text, model, remaining: ticket.remaining, fallback }, 200, origin);
     } catch (err) {
       if (err instanceof QuotaExceededError) {
         await quota.exhaust(config.limit);
