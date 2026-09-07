@@ -5,10 +5,12 @@
    - 「枠切れ」系のエラーは即座に打ち切って上へ返す（教訓005: 枠切れ後のリトライは無意味）
    ========================================================== */
 
+// 本番実測（2026-09-07）: gemma-4 は reasoning_effort=low でも思考で出力枠を使い切り本文が空（79 Neurons/38秒の浪費）。
+// gpt-oss-20b は約15秒で本文を返す。gemma-4 は思考オフ指定つきで最後尾に置く。
 export const DEFAULT_MODELS = [
-  '@cf/google/gemma-4-26b-a4b-it',
   '@cf/openai/gpt-oss-20b',
   '@cf/qwen/qwen3-30b-a3b-fp8',
+  '@cf/google/gemma-4-26b-a4b-it',
 ];
 
 const MAX_OUTPUT_TOKENS = 900;
@@ -64,6 +66,8 @@ export const buildParams = (model, messages) => {
       max_completion_tokens: MAX_OUTPUT_TOKENS * 3,
       temperature: TEMPERATURE,
       reasoning_effort: 'low',
+      // 本番実測で思考が枠を食い切ったため、テンプレート側の思考を切る（効かない場合は本文空→次点へ）
+      chat_template_kwargs: { enable_thinking: false },
     };
   }
   return { messages, max_tokens: MAX_OUTPUT_TOKENS, temperature: TEMPERATURE };

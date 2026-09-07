@@ -51,7 +51,8 @@ D:\dev\hananitsuku-answer-generator\     ← GitHub Pages のルート（index.h
 | フォールバック | 429／5xx／通信失敗のいずれでも、フロントは**同じプロンプト**を表示してコピー＋ChatGPT/Claude/Gemini への導線を出す | — |
 
 Neuron 換算（docs 2026-09）: `@cf/google/gemma-4-26b-a4b-it` は入力 9,091・出力 27,273 Neurons/M tokens。
-1回あたり入力≈800 tokens＋出力≈300 tokens ≈ **15 Neurons** → 10,000 Neurons ≈ 650回/日。`DAILY_LIMIT=500` は予備モデルが高い場合の余裕込み。
+1回あたり入力≈800 tokens＋出力≈300 tokens ≈ **15 Neurons** → 10,000 Neurons ≈ 650回/日。
+**ただし本番実測（2026-09-07）で gemma-4 は思考で枠を使い切って本文が空になったため、1番手は `gpt-oss-20b`（約23 Neurons/回・実測 622 in＋約400 out）に変更。`DAILY_LIMIT=400`（10,000÷23≒430 の安全側）。**
 
 リセットは **UTC 0時＝日本時間 朝9時**（Workers AI の日次枠と揃える）。画面には「本日の残り N回」を出す。
 
@@ -61,9 +62,11 @@ Neuron 換算（docs 2026-09）: `@cf/google/gemma-4-26b-a4b-it` は入力 9,091
 
 | 順 | モデル | 理由 |
 |---|---|---|
-| 1 | `@cf/google/gemma-4-26b-a4b-it` | 最安クラス（$0.10/$0.30 per M）・多言語・OpenAI互換の入出力 |
-| 2 | `@cf/openai/gpt-oss-20b` | 安価・日本語可・`response` 形式 |
-| 3 | `@cf/qwen/qwen3-30b-a3b-fp8` | 入力が極端に安い。thinking を `<think>` で吐く場合があるので除去する |
+| 1 | `@cf/openai/gpt-oss-20b` | **本番実測で約15秒・約23 Neurons で本文を返す**（2026-09-07）。`response` 形式 |
+| 2 | `@cf/qwen/qwen3-30b-a3b-fp8` | 入力が極端に安い。thinking を `<think>` で吐く場合があるので除去する |
+| 3 | `@cf/google/gemma-4-26b-a4b-it` | 最安クラスだが、**本番では `reasoning_effort: low` でも思考が出力枠2,700トークンを使い切り本文が空（`finish_reason: length`・79 Neurons・38秒の浪費）**。`chat_template_kwargs.enable_thinking=false` を付けて最後尾に置く（効くかは未検証） |
+
+🔴 **2026-09-07 本番実測で順番を変更**。当初は gemma-4 を1番手にしていたが、上記の理由で gpt-oss-20b を先頭にした。`DAILY_LIMIT` も 500→400（gpt-oss-20b 換算）。
 
 応答形式の違い（`response` 文字列／`choices[0].message.content`／Responses API の `output[]`）は `ai.js` の `extractText()` が吸収する。
 

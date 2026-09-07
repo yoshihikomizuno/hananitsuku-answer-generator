@@ -10,9 +10,10 @@
   },
   "vars": {
     // Candidate models, tried in order. First one that answers wins.
-    "AI_MODELS": "@cf/google/gemma-4-26b-a4b-it,@cf/openai/gpt-oss-20b,@cf/qwen/qwen3-30b-a3b-fp8",
-    // Global cap per UTC day (keeps usage inside the 10,000 Neurons/day free allocation).
-    "DAILY_LIMIT": "500",
+    // 2026-09-07 production check: gemma-4 burns its whole completion budget on reasoning (empty content), so gpt-oss-20b goes first.
+    "AI_MODELS": "@cf/openai/gpt-oss-20b,@cf/qwen/qwen3-30b-a3b-fp8,@cf/google/gemma-4-26b-a4b-it",
+    // Global cap per UTC day (keeps usage inside the 10,000 Neurons/day free allocation; gpt-oss-20b ~23 neurons/request).
+    "DAILY_LIMIT": "400",
     // Per visitor (hashed IP) caps.
     "PER_IP_MINUTE": "6",
     "PER_IP_DAY": "40",
