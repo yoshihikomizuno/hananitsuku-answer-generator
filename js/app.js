@@ -31,6 +31,10 @@ const FALLBACK_COPY = {
     title: '今日はもう、十分お使いです。',
     text: 'おひとり様の1日ぶんを使い切りました。続きは、下の「呪文」（AIへの指示文）をお手持ちのAIに貼ってどうぞ。',
   },
+  rate_upstream: {
+    title: 'AIが、混み合っています。',
+    text: 'しばらく待ってから、もう一度どうぞ。お急ぎなら、下の「呪文」（AIへの指示文）をお手持ちのAIに貼ればすぐ作れます。',
+  },
   upstream: {
     title: 'AIに、つながりませんでした。',
     text: 'こちら側の都合です。下の「呪文」（AIへの指示文）をお手持ちのAIに貼れば、同じ返事が作れます。',
@@ -237,6 +241,7 @@ const reasonFromResponse = (status, body) => {
   if (status === 429) {
     if (body && body.error === 'quota_exceeded') return 'quota_exceeded';
     if (body && body.scope === 'day') return 'rate_day';
+    if (body && body.scope === 'upstream') return 'rate_upstream';
     return 'rate_minute';
   }
   return 'upstream';
@@ -353,10 +358,19 @@ document.querySelectorAll('.phrase__copy').forEach((button) => {
   });
 });
 
-// 技法一覧（画面の説明用）を data.js から出す
+// 技法一覧（画面の説明用）を data.js から出す（textContent で組み立て・innerHTML は使わない）
 const techniqueList = $('techniqueList');
 if (techniqueList) {
-  techniqueList.innerHTML = TECHNIQUES.map(
-    (t) => `<li class="technique"><span class="technique__name">${t.name}</span><span class="technique__desc">${t.desc}</span></li>`
-  ).join('');
+  TECHNIQUES.forEach((t) => {
+    const item = document.createElement('li');
+    item.className = 'technique';
+    const name = document.createElement('span');
+    name.className = 'technique__name';
+    name.textContent = t.name;
+    const desc = document.createElement('span');
+    desc.className = 'technique__desc';
+    desc.textContent = t.desc;
+    item.append(name, desc);
+    techniqueList.appendChild(item);
+  });
 }
