@@ -5,15 +5,17 @@
    - 「枠切れ」系のエラーは即座に打ち切って上へ返す（教訓005: 枠切れ後のリトライは無意味）
    ========================================================== */
 
-// 本番実測（2026-09-07）: gemma-4 は reasoning_effort=low でも思考で出力枠を使い切り本文が空（79 Neurons/38秒の浪費）。
-// gpt-oss-20b は約15秒で本文を返す。gemma-4 は思考オフ指定つきで最後尾に置く。
+// 本番実測（2026-09-07）: 推論系モデル（gemma-4・gpt-oss-20b）は出力枠が小さいと「考え中」で枠を使い切り本文が空になる
+// （finish_reason=length・content=null・79 / 40 Neurons の浪費）。qwen3 は約9秒・最安で本文を返した。
+// → qwen3 を先頭、gpt-oss-20b は思考弱め指定つきで2番手、gemma-4 は思考オフ指定つきで最後尾。出力枠は全モデル 2000。
 export const DEFAULT_MODELS = [
-  '@cf/openai/gpt-oss-20b',
   '@cf/qwen/qwen3-30b-a3b-fp8',
+  '@cf/openai/gpt-oss-20b',
   '@cf/google/gemma-4-26b-a4b-it',
 ];
 
-const MAX_OUTPUT_TOKENS = 900;
+/** 出力枠。推論（思考）のトークンも消費するので、本文 400 字＋思考の余裕を見て広めに取る（使った分だけ課金） */
+const MAX_OUTPUT_TOKENS = 2000;
 const TEMPERATURE = 0.9;
 /** 1モデルあたりの待ち上限。Playground 実測（2026-09-07）で gemma-4 は推論込みで約30秒かかることがある */
 export const PER_MODEL_TIMEOUT_MS = 40000;
@@ -62,13 +64,16 @@ export const buildParams = (model, messages) => {
   if (OPENAI_STYLE_PREFIXES.some((p) => model.startsWith(p))) {
     return {
       messages,
-      // 推論トークンも出力枠を消費するため、本文が空にならないよう広めに取る（使った分だけ課金）
-      max_completion_tokens: MAX_OUTPUT_TOKENS * 3,
+      max_completion_tokens: MAX_OUTPUT_TOKENS,
       temperature: TEMPERATURE,
       reasoning_effort: 'low',
       // 本番実測で思考が枠を食い切ったため、テンプレート側の思考を切る（効かない場合は本文空→次点へ）
       chat_template_kwargs: { enable_thinking: false },
     };
+  }
+  if (model.startsWith('@cf/openai/gpt-oss')) {
+    // 本番実測で思考が 2,000 字超になることがあるため、思考を弱める指定を添える（未対応なら無視される想定）
+    return { messages, max_tokens: MAX_OUTPUT_TOKENS, temperature: TEMPERATURE, reasoning_effort: 'low' };
   }
   return { messages, max_tokens: MAX_OUTPUT_TOKENS, temperature: TEMPERATURE };
 };

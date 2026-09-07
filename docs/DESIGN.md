@@ -62,11 +62,11 @@ Neuron 換算（docs 2026-09）: `@cf/google/gemma-4-26b-a4b-it` は入力 9,091
 
 | 順 | モデル | 理由 |
 |---|---|---|
-| 1 | `@cf/openai/gpt-oss-20b` | **本番実測で約15秒・約23 Neurons で本文を返す**（2026-09-07）。`response` 形式 |
-| 2 | `@cf/qwen/qwen3-30b-a3b-fp8` | 入力が極端に安い。thinking を `<think>` で吐く場合があるので除去する |
-| 3 | `@cf/google/gemma-4-26b-a4b-it` | 最安クラスだが、**本番では `reasoning_effort: low` でも思考が出力枠2,700トークンを使い切り本文が空（`finish_reason: length`・79 Neurons・38秒の浪費）**。`chat_template_kwargs.enable_thinking=false` を付けて最後尾に置く（効くかは未検証） |
+| 1 | `@cf/qwen/qwen3-30b-a3b-fp8` | **本番実測で約9秒・最安（入力 4,625／出力 30,475 Neurons/M）で本文を返した**（2026-09-07）。thinking を `<think>` で吐く場合は除去 |
+| 2 | `@cf/openai/gpt-oss-20b` | 2回は約15秒で良質な本文を返したが、**3回目は思考 2,142 字で出力枠 900 を使い切り本文空（`content: null`・`finish_reason: length`・40 Neurons）**。`reasoning_effort: low` を添えて2番手 |
+| 3 | `@cf/google/gemma-4-26b-a4b-it` | 最安クラスだが、**本番では `reasoning_effort: low` でも思考が出力枠2,700トークンを使い切り本文空（79 Neurons・38秒の浪費）**。`chat_template_kwargs.enable_thinking=false` を付けて最後尾（効くかは未検証） |
 
-🔴 **2026-09-07 本番実測で順番を変更**。当初は gemma-4 を1番手にしていたが、上記の理由で gpt-oss-20b を先頭にした。`DAILY_LIMIT` も 500→400（gpt-oss-20b 換算）。
+🔴 **2026-09-07 本番実測で2度順番を変更**（gemma-4 先頭 → gpt-oss-20b 先頭 → qwen3 先頭）。推論系モデルは「考え中」の文が出力枠を消費し、枠が小さいと本文が空になる。出力枠は全モデル **2,000** に拡大（使った分だけ課金）。`DAILY_LIMIT` は 400。
 
 応答形式の違い（`response` 文字列／`choices[0].message.content`／Responses API の `output[]`）は `ai.js` の `extractText()` が吸収する。
 
